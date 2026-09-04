@@ -1,6 +1,17 @@
 export async function onRequest(context) {
   const { request, env } = context;
 
+  // 处理 OPTIONS 预检请求
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
   // 不是 POST 请求 → 返回提示
   if (request.method !== "POST") {
     return new Response(JSON.stringify({
