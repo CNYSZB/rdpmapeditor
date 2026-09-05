@@ -25,9 +25,33 @@ export default {
             headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
           });
         }
+
+        // ========== 唯一码生成（6位，带冲突检测） ==========
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
-        for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+        let existing = null;
+        let attempts = 0;
+        const maxAttempts = 20;
+
+        do {
+          code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars[Math.floor(Math.random() * chars.length)];
+          }
+          // 检查这个码是否已经被占用
+          existing = await env.MAP_STORE.get(code);
+          attempts++;
+        } while (existing !== null && attempts < maxAttempts);
+
+        // 如果尝试了20次还没生成唯一码，返回错误
+        if (existing !== null) {
+          return new Response(JSON.stringify({ ok: false, msg: '生成分享码失败，请重试' }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+        // ================================================
+
         await env.MAP_STORE.put(code, body, { expirationTtl: 60 * 60 * 24 * 30 });
         return new Response(JSON.stringify({ ok: true, code }), {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
